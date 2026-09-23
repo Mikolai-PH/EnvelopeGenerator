@@ -277,7 +277,7 @@ footer a{color:var(--text-accent)}
   <div data-body>
     <p class="sub" style="margin:0 0 8px" data-i18n="cal_why">The amplifier and the modulator do not respond proportionally: send an ideal envelope and the diode sees a distorted one. Here you measure that distortion, invert it, and apply the inverse in advance, so the two cancel.</p>
     <ol class="steps">
-      <li data-i18n="cs1">Download the triangle file below and load it into your generator as the output waveform. It is 16384 points, values 0 to 1, one per line.</li>
+      <li data-i18n="cs1">Download the triangle file below and load it into your setup as the input waveform. It is 16384 points, values 0 to 1, one per line.</li>
       <li data-i18n="cs2">Run the setup as during a normal measurement: generator, modulator, laser, photodiode.</li>
       <li data-i18n="cs3">Capture the photodiode on the oscilloscope over at least one full triangle period and export it as CSV with two columns, time and voltage.</li>
       <li data-i18n="cs4">Upload that capture below. The app finds the peak, then the two minima either side, and uses the rising edge between them — that is the only monotonic part, and only a monotonic function can be inverted.</li>
@@ -444,7 +444,7 @@ tip_axrst:"Restores automatic axes for this chart",
 ph_rec:"Runs when you press apply.",ph_out:"Press apply to run the inversion and build the CSV.",
 key_b:"starting envelope",key_r:"new envelope after the multiplier",key_o:"what you design",key_g:"references",
 cal_why:"The amplifier and the modulator do not respond proportionally: send an ideal envelope and the diode sees a distorted one. Here you measure that distortion, invert it, and apply the inverse in advance, so the two cancel.",
-cs1:"Download the triangle file below and load it into your generator as the output waveform. It is 16384 points, values 0 to 1, one per line.",
+cs1:"Download the triangle file below and load it into your setup as the input waveform. It is 16384 points, values 0 to 1, one per line.",
 cs2:"Run the setup as during a normal measurement: generator, modulator, laser, photodiode.",
 cs3:"Capture the photodiode on the oscilloscope over at least one full triangle period and export it as CSV with two columns, time and voltage.",
 cs4:"Upload that capture below. The app finds the peak, then the two minima either side, and uses the rising edge between them — that is the only monotonic part, and only a monotonic function can be inverted.",
