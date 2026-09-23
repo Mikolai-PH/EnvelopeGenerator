@@ -750,15 +750,27 @@ return{cdf:c2,sin:s,Fr:fftshift(re),Fi:fftshift(im)};}
 function path(p){var d="",i;for(i=0;i<p.length;i++)d+=(i?"L":"M")+p[i][0].toFixed(2)+" "+p[i][1].toFixed(2);return d;}
 function el(tag,at){var e=document.createElementNS("http://www.w3.org/2000/svg",tag);
 for(var k in at)e.setAttribute(k,at[k]);return e;}
+// Każda ramka dostaje własny obszar przycinania. Krzywe są do niego przypięte,
+// więc po rozciągnięciu albo przesunięciu nie wychodzą poza układ współrzędnych.
+var CLIP=0;
 function frame(svg,W,H,L,R,Tp,B){svg.innerHTML="";var g=el("g",{});svg.appendChild(g);
 if(C.bg)g.appendChild(el("rect",{x:0,y:0,width:W,height:H,rx:8,fill:C.bg}));
+var cid="cl"+(++CLIP),defs=el("defs",{}),cp=el("clipPath",{id:cid});
+var cr=el("rect",{x:L,y:Tp,width:Math.max(1,W-R-L),height:Math.max(1,H-B-Tp)});
+cp.appendChild(cr);defs.appendChild(cp);g.appendChild(defs);
+g.cid=cid;g.crect=cr;
 g.appendChild(el("line",{x1:L,y1:H-B,x2:W-R,y2:H-B,stroke:C.grid,"stroke-width":1}));
 g.appendChild(el("line",{x1:L,y1:Tp,x2:L,y2:H-B,stroke:C.grid,"stroke-width":1}));return g;}
+function setClip(g,x,y,w,h){if(!g||!g.crect)return;
+g.crect.setAttribute("x",x);g.crect.setAttribute("y",y);
+g.crect.setAttribute("width",Math.max(1,w));g.crect.setAttribute("height",Math.max(1,h));}
 function txt(g,x,y,s,an,col,fs){var e=el("text",{x:x,y:y,"text-anchor":an||"middle",fill:col||C.mut,"font-size":fs||10});
 e.textContent=s;g.appendChild(e);}
 function tline(g,pts,col,w,dash){if(pts.length<2)return;
 var a={d:path(pts),fill:"none",stroke:col,"stroke-width":w||1.5,"stroke-linejoin":"round"};
-if(dash)a["stroke-dasharray"]=dash;g.appendChild(el("path",a));}
+if(dash)a["stroke-dasharray"]=dash;
+if(g.cid)a["clip-path"]="url(#"+g.cid+")";
+g.appendChild(el("path",a));}
 
 /* ---------------- sterowanie osiami ---------------- */
 var AX={};
@@ -766,6 +778,9 @@ var AX={};
 ["fft","flt","env","rec","mir","dio","tr"].forEach(function(k){
 AX[k]={xt:"",yt:"",sx:1,sy:1,ox:0,oy:0,lin:""};});
 function axClear(k){AX[k]={xt:"",yt:"",sx:1,sy:1,ox:0,oy:0,lin:""};}
+// Przesunięcie najwyżej o pół okna w każdą stronę — dzięki temu co najmniej
+// połowa pierwotnego zakresu zawsze zostaje w układzie współrzędnych.
+function clampPan(v){return Math.max(-0.5,Math.min(0.5,v));}
 // zakres po rozciągnięciu suwakiem i przesunięciu myszką
 function axX(k,lo,hi){var A=AX[k],r=stretch(lo,hi,A.sx),s=r[1]-r[0];
 return[r[0]+A.ox*s,r[1]+A.ox*s];}
@@ -788,22 +803,60 @@ if(sharedX){var span=st.u1-st.u0,sh=-fx*span,u0=st.u0+sh,u1=st.u1+sh;
 if(u0<U_MIN){u1+=U_MIN-u0;u0=U_MIN;}
 if(u1>U_MAX){u0-=u1-U_MAX;u1=U_MAX;}
 view.u0=u0;view.u1=u1;}
-else AX[key].ox=st.ox-fx;
-AX[key].oy=st.oy+fy;
+else AX[key].ox=clampPan(st.ox-fx);
+AX[key].oy=clampPan(st.oy+fy);
 redrawAll();});
 var end=function(){if(st){st=null;svgEl.style.cursor="grab";}};
 svgEl.addEventListener("pointerup",end);
 svgEl.addEventListener("pointercancel",end);}
-// "6" -> sześć równo rozłożonych tików; "0.1, 1, 10" -> dokładnie te wartości
-function parseTicks(str,lo,hi){
-var s=String(str||"").trim();if(!s)return null;
+// Krok zaokrąglony do 1, 2 albo 5 razy potęga dziesiątki — żeby podziałki
+// wypadały na okrągłych liczbach, a nie na 0.3714.
+function niceStep(raw){
+if(!(raw>0))return 1;
+var e=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/e;
+return (f<=1?1:f<=2?2:f<=5?5:10)*e;}
+function niceTicks(lo,hi,n){
+if(!(hi>lo))return[lo];
+n=Math.max(2,Math.min(24,n||6));
+var step=niceStep((hi-lo)/n),out=[],v=Math.ceil(lo/step)*step,guard=0;
+for(;v<=hi+step*1e-9&&guard<300;v+=step,guard++)
+out.push(Math.abs(v)<step*1e-9?0:v);
+return out.length?out:[lo,hi];}
+// Oś logarytmiczna: 1, 2, 5, 10, 20, 50… a przy szerokim zakresie same dekady.
+function logTicks(lo,hi,maxN){
+if(!(lo>0)||!(hi>lo))return[];
+var out=[],mul=[1,2,5],e=Math.floor(Math.log10(lo)),eMax=Math.ceil(Math.log10(hi)),i,v;
+for(;e<=eMax;e++)for(i=0;i<3;i++){v=mul[i]*Math.pow(10,e);
+if(v>=lo*0.999&&v<=hi*1.001)out.push(v);}
+if(out.length>(maxN||9))out=out.filter(function(v){
+return Math.abs(Math.log10(v)-Math.round(Math.log10(v)))<1e-9;});
+return out;}
+// Same dekady w zadanym zakresie wykładników, przerzedzone do maxN sztuk.
+function decadeTicks(dlo,dhi,maxN){
+var e0=Math.ceil(dlo),e1=Math.floor(dhi);
+if(e1<e0)return[Math.pow(10,dhi)];
+var step=Math.max(1,Math.ceil((e1-e0+1)/(maxN||6))),out=[],e;
+for(e=e1;e>=e0;e-=step)out.push(Math.pow(10,e));
+return out;}
+// Oś signed-log: zero i dekady w obie strony, tak jak symlog w matplotlibie.
+function symlogTicks(lin,M,maxN){
+var e0=Math.ceil(Math.log10(lin)),e1=Math.floor(Math.log10(M));
+if(!(e1>=e0))return[0,M,-M];
+var step=Math.max(1,Math.ceil((e1-e0+1)/(maxN||4))),out=[0],e,v;
+for(e=e1;e>=e0;e-=step){v=Math.pow(10,e);out.push(v);out.push(-v);}
+return out;}
+// "6" -> sześć okrągłych podziałek; "0.1, 1, 10" -> dokładnie te wartości;
+// puste -> podziałki automatyczne. Zwraca zawsze tablicę, nigdy null.
+function parseTicks(str,lo,hi,auto){
+var s=String(str||"").trim();
+var mk=auto||function(n){return niceTicks(lo,hi,n);};
+if(!s)return mk(0);
 if(!/[,;\s]/.test(s)){
-var n=parseInt(s,10),o,i;
-if(isFinite(n)&&n>=2&&n<=24&&String(n)===s){o=[];
-for(i=0;i<n;i++)o.push(lo+(hi-lo)*i/(n-1));return o;}
-var v=parseFloat(s);return isFinite(v)?[v]:null;}
+var n=parseInt(s,10);
+if(isFinite(n)&&n>=2&&n<=24&&String(n)===s)return mk(n);
+var v=parseFloat(s);return isFinite(v)?[v]:mk(0);}
 var a=s.split(/[,;\s]+/).map(parseFloat).filter(function(v){return isFinite(v);});
-return a.length?a:null;}
+return a.length?a:mk(0);}
 function stretch(lo,hi,s){var c=(lo+hi)/2,h=(hi-lo)/(2*(s||1));return[c-h,c+h];}
 function axNum(k,key){var v=parseFloat(AX[k][key]);return isFinite(v)&&v>0?v:null;}
 function fmtTick(v){
@@ -851,16 +904,14 @@ mx=Math.max(mx,s.y[i]);mn=Math.min(mn,s.y[i]);}});
 var pad=(mx-mn)*0.1||1,yr=axY(key,mn-pad,mx+pad),lo=yr[0],hi=yr[1];
 var X=function(v){return L+(v-t0)/(t1-t0)*(W-R-L);},
     Y=function(v){return H-B-(v-lo)/(hi-lo)*(H-Tp-B);};
-var xt=parseTicks(A.xt,t0,t1),yt=parseTicks(A.yt,lo,hi),k,px;
-if(!xt){xt=[];for(k=-1;k<=1;k++)xt.push(k*1.5);}
+var xt=parseTicks(A.xt,t0,t1),yt=parseTicks(A.yt,lo,hi),px;
 xt.forEach(function(v){if(v<t0||v>t1)return;px=X(v);
 g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.5}));
 txt(g,px,H-8,fmtTick(v));});
 if(lo<0&&hi>0)g.appendChild(el("line",{x1:L,y1:Y(0),x2:W-R,y2:Y(0),stroke:C.grid,"stroke-width":1,opacity:0.7}));
-if(yt)yt.forEach(function(v){if(v<lo||v>hi)return;
+yt.forEach(function(v){if(v<lo||v>hi)return;
 g.appendChild(el("line",{x1:L,y1:Y(v),x2:W-R,y2:Y(v),stroke:C.grid,"stroke-width":1,opacity:0.3}));
 txt(g,L-5,Y(v)+3,fmtTick(v),"end");});
-else{txt(g,L-5,Y(0)+3,"0","end");txt(g,L-5,Y(mx)+3,fmtTick(mx),"end");}
 series.forEach(function(s){var p=[],st=Math.max(1,Math.floor(s.x.length/1400));
 for(i=0;i<s.x.length;i+=st)if(s.x[i]>=t0&&s.x[i]<=t1)p.push([X(s.x[i]),Y(s.y[i])]);
 tline(g,p,s.c,2,s.d);});
@@ -896,24 +947,19 @@ var lin=axNum("fft","lin")||Math.max(M*1e-6,1e-14);
 var slog=function(v){return Math.sign(v)*Math.log10(1+Math.abs(v)/lin);};
 var smax=(slog(M)||1)/(A.sy||1);
 var Y=function(v){return H-B-(slog(v)/smax*0.46+0.5-A.oy)*(H-Tp-B);};
-var xt=parseTicks(A.xt,fmin,fmax);
-if(xt)xt.forEach(function(v){if(v<fmin||v>fmax||v<=0)return;px=X(Math.log10(v));
+var xt=parseTicks(A.xt,fmin,fmax,function(n){return logTicks(fmin,fmax,n||9);});
+xt.forEach(function(v){if(v<fmin||v>fmax||v<=0)return;px=X(Math.log10(v));
 g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.6}));
 txt(g,px,H-10,fmtTick(v));});
-else for(e=Math.ceil(u0);e<=Math.floor(u1);e++){px=X(e);
-g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.6}));
-txt(g,px,H-10,"1e"+e);}
 g.appendChild(el("line",{x1:L,y1:Y(0),x2:W-R,y2:Y(0),stroke:C.grid,"stroke-width":1,opacity:0.8}));
 [0,0.5,1].forEach(function(v){txt(g,W-R+6,Yv(v)+3,v.toFixed(1),"start",C.o);
 g.appendChild(el("line",{x1:L,y1:Yv(v),x2:W-R,y2:Yv(v),stroke:C.grid,"stroke-width":1,opacity:0.25}));});
 txt(g,L-7,Tp+9,"p(f)","end");
-var yt=parseTicks(A.yt,-M,M);
-if(yt)yt.forEach(function(v){var y=Y(v);if(y<Tp||y>H-B)return;
+var yt=parseTicks(A.yt,-M,M,function(n){
+return symlogTicks(lin,M,n?Math.max(1,Math.floor(n/2)):4);});
+yt.forEach(function(v){var y=Y(v);if(y<Tp||y>H-B)return;
 g.appendChild(el("line",{x1:L,y1:y,x2:W-R,y2:y,stroke:C.grid,"stroke-width":1,opacity:0.25}));
-txt(g,L-7,y+3,fmtTick(v),"end");});
-else{txt(g,L-7,Y(0)+3,"0","end");
-txt(g,L-7,Y(M)+3,"+"+M.toExponential(0),"end");
-txt(g,L-7,Y(-M)+3,"−"+M.toExponential(0),"end");}
+txt(g,L-7,y+3,v===0?"0":(v>0?"":"−")+Math.abs(v).toExponential(0),"end");});
 txt(g,W-R+6,Tp+9,"m","start",C.o);
 if(P0){var st=Math.max(1,Math.floor(P0.f.length/700)),pi=[],pr=[],pm=[],x;
 for(i=0;i<P0.f.length;i+=st){f=P0.f[i];if(f<fmin||f>fmax)continue;x=X(Math.log10(f));
@@ -960,19 +1006,15 @@ var lo=axNum("flt","lin")||hi*1e-20;
 if(lo>=hi)lo=hi*1e-20;
 var dr=axY("flt",Math.log10(lo),Math.log10(hi)),dlo=dr[0],dhi=dr[1];
 var Y=function(p){return H-B-(Math.log10(Math.max(p,Math.pow(10,dlo)))-dlo)/(dhi-dlo)*(H-Tp-B);};
-var xt=parseTicks(A.xt,fmin,fmax);
-if(xt)xt.forEach(function(v){if(v<fmin||v>fmax||v<=0)return;px=X(Math.log10(v));
+var xt=parseTicks(A.xt,fmin,fmax,function(n){return logTicks(fmin,fmax,n||9);});
+xt.forEach(function(v){if(v<fmin||v>fmax||v<=0)return;px=X(Math.log10(v));
 g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.6}));
 txt(g,px,H-9,fmtTick(v));});
-else for(e=Math.ceil(u0);e<=Math.floor(u1);e++){px=X(e);
-g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.6}));
-txt(g,px,H-9,"1e"+e);}
-var yt=parseTicks(A.yt,Math.pow(10,dlo),Math.pow(10,dhi));
-if(yt)yt.forEach(function(v){if(v<=0)return;var y=Y(v);if(y<Tp||y>H-B)return;
+var yt=parseTicks(A.yt,Math.pow(10,dlo),Math.pow(10,dhi),function(n){
+return decadeTicks(dlo,dhi,n||6);});
+yt.forEach(function(v){if(v<=0)return;var y=Y(v);if(y<Tp||y>H-B)return;
 g.appendChild(el("line",{x1:L,y1:y,x2:W-R,y2:y,stroke:C.grid,"stroke-width":1,opacity:0.25}));
 txt(g,L-6,y+3,v.toExponential(0),"end");});
-else{txt(g,L-6,Tp+8,"1e"+Math.round(dhi),"end");
-txt(g,L-6,H-B,"1e"+Math.round(dlo),"end");}
 var st=Math.max(1,Math.floor(P0.f.length/700)),pa=[],pb=[],x,m;
 for(i=0;i<P0.f.length;i+=st){f=P0.f[i];if(f<fmin||f>fmax)continue;x=X(Math.log10(f));
 pa.push([x,Y(P0.p[i])]);m=FN(f);pb.push([x,Y(P0.p[i]*m*m)]);}
@@ -993,9 +1035,11 @@ for(i=0;i<=400;i++){f=f0+(f1-f0)*i/400;y=Y(FN(f));(f<0?pl:pr).push([X(f),y]);}
 tline(g,pl,C.o,2,"5 4");tline(g,pr,C.o,2.5);
 txt(g,X(f0+(f1-f0)*0.26),Tp+11,tr("lb_mir"));
 txt(g,X(f0+(f1-f0)*0.74),Tp+11,tr("lb_drawn"));
-var xt=parseTicks(A.xt,f0,f1)||[-2,-1,0,1,2];
-xt.forEach(function(v){if(v<f0||v>f1)return;txt(g,X(v),H-6,fmtTick(v));});
-var yt=parseTicks(A.yt,v0,v1)||[0,1];
+var xt=parseTicks(A.xt,f0,f1),yt=parseTicks(A.yt,v0,v1,function(n){
+return niceTicks(v0,Math.min(v1,1),n||4);});
+xt.forEach(function(v){if(v<f0||v>f1)return;
+g.appendChild(el("line",{x1:X(v),y1:Tp,x2:X(v),y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.35}));
+txt(g,X(v),H-6,fmtTick(v));});
 yt.forEach(function(v){if(v<v0||v>v1)return;txt(g,L-4,Y(v)+3,fmtTick(v),"end");});}
 
 function drawChips(){var c=document.getElementById("chips");
@@ -1116,14 +1160,20 @@ for(i=0;i<M;i++){x=TWOPI*i/M;v[i]=1-(2/Math.PI)*Math.abs(x-Math.PI)+1;
 mn=Math.min(mn,v[i]);mx=Math.max(mx,v[i]);}
 var parts=[];for(i=0;i<M;i++)parts.push(((v[i]-mn)/(mx-mn)).toFixed(9));
 return parts.join("\n")+"\n";}
+// Przebieg demonstracyjny musi wyglądać jak prawdziwy zapis z oscyloskopu,
+// czyli zawierać kilka pełnych okresów trójkąta. Pojedynczy impuls otoczony
+// płaskim zerem psuł wykrywanie zbocza: skan na połowie wysokości nigdy nie
+// wracał ponad próg po lewej stronie szczytu i za zbocze brany był także
+// odcinek zerowy, przez co dopasowanie schodziło do R² rzędu 0,83.
 function demoTrace(){var TA=0.61,TB=3.1,TC=0.42,M=1400,vg=[],tg=[],i,v;
 for(i=0;i<=M;i++){v=i/M;vg.push(v);tg.push(v+TC*bet(v,TA,TB));}
-var tmax=tg[M];for(i=0;i<=M;i++)tg[i]/=tmax;
-var n=3000,tt=new Float64Array(n),vv=new Float64Array(n),u,ph,val,w,j;
-for(i=0;i<n;i++){u=i/(n-1);tt[i]=-0.03+0.06*u;ph=(u-0.15)/0.35;
-if(ph<0||ph>2)val=0;
-else{w=ph<=1?ph:2-ph;j=0;while(j<M&&tg[j]<w)j++;val=vg[Math.min(M,j)];}
-vv[i]=val*2.4+0.05+(Math.random()-0.5)*0.012;}
+var tmax=tg[M]||1;for(i=0;i<=M;i++)tg[i]/=tmax;
+var n=3000,tt=new Float64Array(n),vv=new Float64Array(n),per=2.5,u,ph,w,j;
+for(i=0;i<n;i++){u=i/(n-1);tt[i]=-0.03+0.06*u;
+ph=(u*per+0.25)%1;                 // położenie w obrębie okresu, 0..1
+w=ph<0.5?ph*2:(1-ph)*2;            // trójkąt: w górę do 1 i z powrotem do 0
+j=0;while(j<M&&tg[j]<w)j++;        // odpowiedź diody = odwrotność g(w)
+vv[i]=vg[Math.min(M,j)]*2.4+0.05+(Math.random()-0.5)*0.012;}
 return{t:tt,v:vv};}
 function traceCSV(trc){var parts=["Time,Voltage"],i;
 for(i=0;i<trc.t.length;i++)parts.push(trc.t[i].toExponential(6)+","+trc.v[i].toFixed(6));
@@ -1156,13 +1206,12 @@ var q=[],sk=Math.max(1,Math.floor((CAL.A.ix-CAL.A.i0)/300));
 for(i=CAL.A.i0;i<=CAL.A.ix;i+=sk)if(i>=s0&&i<=s1)q.push([X(i),Y(rw.v[i])]);
 tline(g,q,C.b,2);
 var xtd=parseTicks(AD.xt,s0,s1),ytd=parseTicks(AD.yt,lo,hi);
-if(xtd)xtd.forEach(function(v){if(v<s0||v>s1)return;
+xtd.forEach(function(v){if(v<s0||v>s1)return;
 g.appendChild(el("line",{x1:X(v),y1:Tp,x2:X(v),y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.5}));
 txt(g,X(v),H-8,fmtTick(v));});
-if(ytd)ytd.forEach(function(v){if(v<lo||v>hi)return;
+ytd.forEach(function(v){if(v<lo||v>hi)return;
 g.appendChild(el("line",{x1:L,y1:Y(v),x2:W-R,y2:Y(v),stroke:C.grid,"stroke-width":1,opacity:0.3}));
 txt(g,L-6,Y(v)+3,fmtTick(v),"end");});
-else{txt(g,L-6,Y(hi)+8,hi.toFixed(2),"end");txt(g,L-6,Y(lo),lo.toFixed(2),"end");}
 txt(g,(L+W-R)/2,H-1,tr("ax_smp"));
 txt(g,X((CAL.A.i0+CAL.A.ix)/2),Tp+10,tr("st_edge"),null,C.b);}
 else{var gh=frame(svgD,W,H,L,R,Tp,B);txt(gh,W/2,H/2,tr("st_handonly"));}
@@ -1173,6 +1222,7 @@ var SZ=Math.min(W2*0.42,H2-T2-B2),
     X2=function(v){return L2+(v-txr[0])/(txr[1]-txr[0])*SZ;},
     Y2=function(v){return H2-B2-(v-tyr[0])/(tyr[1]-tyr[0])*SZ;};
 g2.appendChild(el("rect",{x:L2,y:H2-B2-SZ,width:SZ,height:SZ,fill:"none",stroke:C.grid,"stroke-width":1}));
+setClip(g2,L2,H2-B2-SZ,SZ,SZ);
 tline(g2,[[X2(0),Y2(0)],[X2(1),Y2(1)]],C.mut,1,"4 4");
 if(CAL.A){var A=CAL.A,m=A.tsc.length,sk2=Math.max(1,Math.floor(m/400)),pa=[],pb=[],x,y;
 for(i=0;i<m;i+=sk2){x=Math.max(-0.05,Math.min(1.05,A.tsc[i]));y=Math.max(-0.05,Math.min(1.05,A.vraw[i]));
@@ -1181,8 +1231,7 @@ tline(g2,pa,C.b,1.4);tline(g2,pb,C.g,1.4);}
 var pf=[];for(i=0;i<=200;i++){var xx=i/200;pf.push([X2(xx),Y2(Math.min(1.05,gfun(xx,CAL)))]);}
 tline(g2,pf,C.o,2.2);
 txt(g2,L2+SZ/2,H2-4,tr("ax_in"));
-var xtt=parseTicks(AT.xt,txr[0],txr[1])||[0,0.5,1];
-var ytt=parseTicks(AT.yt,tyr[0],tyr[1])||[0,0.5,1];
+var xtt=parseTicks(AT.xt,txr[0],txr[1]),ytt=parseTicks(AT.yt,tyr[0],tyr[1]);
 xtt.forEach(function(v){if(v<txr[0]||v>txr[1])return;txt(g2,X2(v),H2-B2+12,fmtTick(v));});
 ytt.forEach(function(v){if(v<tyr[0]||v>tyr[1])return;txt(g2,L2-6,Y2(v)+3,fmtTick(v),"end");});
 var bx=L2+SZ+24,yy=T2+16;
@@ -1294,7 +1343,7 @@ var sh=(panStart.x-d.px)/(ST.W-ST.R-ST.L)*span,u0=panStart.u0+sh,u1=panStart.u1+
 if(u0<U_MIN){u1+=U_MIN-u0;u0=U_MIN;}
 if(u1>U_MAX){u0-=u1-U_MAX;u1=U_MAX;}
 view.u0=Math.max(U_MIN,u0);view.u1=Math.min(U_MAX,u1);
-AX.fft.oy=panStart.oy+(d.py-panStart.y)/(ST.H-ST.Tp-ST.B);
+AX.fft.oy=clampPan(panStart.oy+(d.py-panStart.y)/(ST.H-ST.Tp-ST.B));
 drawFFT();drawFiltered();return;}
 if(!drag)return;var d2=toData(e);drag.v=d2.v;
 if(!drag.pin)drag.f=Math.min(NYQ,Math.max(DF*1.02,Math.pow(10,d2.u)));
@@ -1553,11 +1602,10 @@ runPython(cfg).then(function(res){
 // Przeciąganie myszką na wszystkich wykresach poza głównym, gdzie gest
 // obsługuje narzędzie Przesuwaj. Wykres P(f) przesuwa w poziomie wspólne
 // okno częstotliwości, żeby nie rozjechał się z edytorem splajnu.
+// Wykresy kalibracji są dobrane do swoich osi i nie potrzebują przesuwania.
 attachPan(svgFl,"flt",true);
 attachPan(document.getElementById("svg-env"),"env",false);
 attachPan(svgM,"mir",false);
-attachPan(svgD,"dio",false);
-attachPan(svgT,"tr",false);
 
 knots=expKnots();rebuild();
 applyTheme();applyLang();
