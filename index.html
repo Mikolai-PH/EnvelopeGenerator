@@ -84,6 +84,23 @@ code.csv{font-size:11px;color:var(--text-secondary);white-space:pre;display:bloc
 .ok{font-size:12px;color:var(--text-success);margin:6px 0 0}
 .selbox{background:var(--surface-1);border-radius:var(--radius);padding:8px 10px}
 .kl{font-size:12px;color:var(--text-secondary);min-width:96px}
+.axb{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:6px;
+ padding-top:6px;border-top:0.5px solid var(--border)}
+.axi{display:inline-flex;align-items:center;gap:4px}
+.axl{font-size:11px;color:var(--text-muted);white-space:nowrap}
+.axb input[type=text]{height:26px;padding:2px 6px;font-size:11px;
+ font-family:var(--mono-font,var(--font-mono))}
+.axb input[type=range]{height:16px;width:76px}
+.axb button{padding:3px 7px;font-size:11px}
+.p.cal{background:var(--surface-1);border-color:var(--border-strong)}
+#app.flat .p.cal{background:var(--surface-1);border:0.5px solid var(--border);
+ border-radius:12px;padding:10px 14px 12px}
+.steps{margin:0 0 8px;padding-left:22px;font-size:12px;color:var(--text-secondary);line-height:1.6}
+.steps li{margin-bottom:3px}
+.steps li::marker{color:var(--text-accent);font-weight:500}
+.secthead{display:flex;align-items:center;gap:10px;margin:22px 0 8px}
+.secthead span{font-size:12px;color:var(--text-muted);white-space:nowrap}
+.secthead i.ln{flex:1;height:1px;background:var(--border);display:block}
 .badge{font-size:11px;padding:2px 7px;border-radius:var(--radius);background:var(--surface-1);color:var(--text-muted);white-space:nowrap}
 .badge.exact{background:var(--bg-accent);color:var(--text-accent)}
 #tip{position:absolute;display:none;max-width:280px;background:var(--surface-popover);border:0.5px solid var(--border-stronger);border-radius:var(--radius);padding:6px 9px;font-size:12px;line-height:1.45;color:var(--text-secondary);pointer-events:none;z-index:60}
@@ -105,6 +122,13 @@ footer a{color:var(--text-accent)}
   <h1 data-i18n="title">Pulse shaping designer</h1>
   <button class="tl" id="gear" aria-label="Settings" data-i18n-tip="tip_gear"><i class="ti ti-settings" style="font-size:16px" aria-hidden="true"></i><span data-i18n="settings">Settings</span></button>
 </div>
+
+<p class="sub" style="margin:-4px 0 12px">
+  <span class="sw" data-c="b"></span><span data-i18n="key_b">starting envelope</span> ·
+  <span class="sw" data-c="r"></span><span data-i18n="key_r">new envelope after the multiplier</span> ·
+  <span class="sw" data-c="o"></span><span data-i18n="key_o">what you design</span> ·
+  <span class="sw" data-c="g"></span><span data-i18n="key_g">references</span>
+</p>
 
 <div class="p" id="settings">
   <div class="srow"><span class="slab" data-i18n="s_lang">Language</span>
@@ -144,7 +168,7 @@ footer a{color:var(--text-accent)}
 <div class="p" data-panel>
   <div class="hd"><i class="ti ti-grip-vertical hdl" aria-hidden="true" data-i18n-tip="tip_grip"></i><i class="ti ti-chevron-down chv" aria-hidden="true"></i><h3 data-i18n="pn_fft">FFT function p(f) with spline overlay</h3><span class="badge" data-i18n="bd_prev">preview</span><span class="sub" id="knot-info"></span></div>
   <div data-body>
-    <div class="eq">p(f) = F{ sin( ∫F(τ)dτ ) } · m(|f|)</div>
+    <div class="eq">p(f) = FT{ sin( ∫F(τ)dτ ) } · m(|f|)</div>
     <div class="tb">
       <button class="tl on" data-mode="move" data-i18n-tip="tip_move"><i class="ti ti-pointer" aria-hidden="true"></i><span data-i18n="b_move">Move</span></button>
       <button class="tl" data-mode="add" data-i18n-tip="tip_add"><i class="ti ti-plus" aria-hidden="true"></i><span data-i18n="b_add">Add</span></button>
@@ -158,13 +182,14 @@ footer a{color:var(--text-accent)}
     </div>
     <div class="lg" data-i18n-tip="tip_leg">
       <button class="lgi on" data-s="imag"><span class="sw" data-c="b"></span>Im p(f)</button>
-      <button class="lgi on" data-s="real"><span class="sw" data-c="r"></span>Re p(f)</button>
-      <button class="lgi on" data-s="mod"><span class="sw" data-c="a"></span>Im p · m</button>
+      <button class="lgi on" data-s="real"><span class="sw" data-c="b2"></span>Re p(f)</button>
+      <button class="lgi on" data-s="mod"><span class="sw" data-c="r"></span>Im p · m</button>
       <button class="lgi on" data-s="ref"><span class="sw" data-c="g"></span>exp(−|f|^44)</button>
       <button class="lgi on" data-s="eqn"><span class="sw" data-c="v"></span><span data-i18n="lg_eq">equation</span></button>
       <button class="lgi on" data-s="spline"><span class="sw" data-c="o"></span><span data-i18n="lg_spl">spline m</span></button>
     </div>
     <svg id="svg-fft" viewBox="0 0 652 270" width="100%" role="img" data-tip-anchor="below" data-i18n-tip="tip_cfft" aria-label="FFT function with the draggable spline multiplier"></svg>
+    <div class="axb" data-ax="fft"></div>
   </div>
 </div>
 
@@ -206,38 +231,61 @@ footer a{color:var(--text-accent)}
   <div class="hd"><i class="ti ti-grip-vertical hdl" aria-hidden="true" data-i18n-tip="tip_grip"></i><i class="ti ti-chevron-down chv" aria-hidden="true"></i><h3 data-i18n="pn_flt">Filter function P(f) = |p(f)|²</h3><span class="badge" data-i18n="bd_prev">preview</span></div>
   <div data-body>
     <div class="lg" data-i18n-tip="tip_leg">
-      <button class="lgi on" data-s="before"><span class="sw" data-c="g"></span><span data-i18n="lg_bef">before</span></button>
-      <button class="lgi on" data-s="after"><span class="sw" data-c="a"></span><span data-i18n="lg_aft">after</span></button>
+      <button class="lgi on" data-s="before"><span class="sw" data-c="b"></span><span data-i18n="lg_bef">before</span></button>
+      <button class="lgi on" data-s="after"><span class="sw" data-c="r"></span><span data-i18n="lg_aft">after</span></button>
     </div>
     <svg id="svg-flt" viewBox="0 0 652 170" width="100%" role="img" data-tip-anchor="below" data-i18n-tip="tip_cflt" aria-label="Filter function before and after the multiplier"></svg>
+    <div class="axb" data-ax="flt"></div>
   </div>
 </div>
 
 <div class="p" data-panel>
   <div class="hd"><i class="ti ti-grip-vertical hdl" aria-hidden="true" data-i18n-tip="tip_grip"></i><i class="ti ti-chevron-down chv" aria-hidden="true"></i><h3 data-i18n="pn_env">Input envelope</h3><span class="sub" id="env-info"></span></div>
-  <div data-body><svg id="svg-env" viewBox="0 0 652 150" width="100%" role="img" data-tip-anchor="below" data-i18n-tip="tip_cenv" aria-label="Input envelope against time"></svg></div>
+  <div data-body>
+    <div class="lg" data-i18n-tip="tip_leg">
+      <button class="lgi on" data-s="einp"><span class="sw" data-c="b"></span><span data-i18n="lg_ein">input F(τ)</span></button>
+      <button class="lgi on" data-s="erec"><span class="sw" data-c="r"></span><span data-i18n="lg_erec">reconstructed, same scale</span></button>
+    </div>
+    <svg id="svg-env" viewBox="0 0 652 150" width="100%" role="img" data-tip-anchor="below" data-i18n-tip="tip_cenv" aria-label="Input envelope against time"></svg>
+    <div class="axb" data-ax="env"></div>
+  </div>
 </div>
 
 <div class="p" data-panel>
   <div class="hd"><i class="ti ti-grip-vertical hdl" aria-hidden="true" data-i18n-tip="tip_grip"></i><i class="ti ti-chevron-down chv" aria-hidden="true"></i><h3 data-i18n="pn_rec">Reconstructed envelope</h3><span class="badge" id="rec-badge" data-i18n="bd_wait">waiting</span><span class="sub" id="rec-info"></span></div>
   <div data-body>
     <div class="lg" data-i18n-tip="tip_leg">
-      <button class="lgi on" data-s="renv"><span class="sw" data-c="o"></span><span data-i18n="lg_env">envelope F(t)</span></button>
-      <button class="lgi on" data-s="rcomp"><span class="sw" data-c="v"></span><span data-i18n="lg_pre">sgn·g(|F|) pre-distorted</span></button>
+      <button class="lgi on" data-s="renv"><span class="sw" data-c="r"></span><span data-i18n="lg_env">envelope F(t)</span></button>
+      <button class="lgi on" data-s="rcomp"><span class="sw" data-c="r2"></span><span data-i18n="lg_pre">sgn·g(|F|) pre-distorted</span></button>
     </div>
     <div id="rec-wrap" data-tip-anchor="below" data-i18n-tip="tip_crec"><p class="ph" data-i18n="ph_rec">Runs when you press apply.</p></div>
+    <div class="axb" data-ax="rec"></div>
   </div>
 </div>
 
 <div class="p" data-panel>
   <div class="hd"><i class="ti ti-grip-vertical hdl" aria-hidden="true" data-i18n-tip="tip_grip"></i><i class="ti ti-chevron-down chv" aria-hidden="true"></i><h3 data-i18n="pn_mir">Mirrored to f &lt; 0</h3><span class="sub" data-i18n="sub_mir">m is a function of |f|</span></div>
-  <div data-body><svg id="svg-mir" viewBox="0 0 652 110" width="100%" role="img" data-tip-anchor="below" data-i18n-tip="tip_cmir" aria-label="The multiplier mirrored onto negative frequencies"></svg></div>
+  <div data-body><svg id="svg-mir" viewBox="0 0 652 110" width="100%" role="img" data-tip-anchor="below" data-i18n-tip="tip_cmir" aria-label="The multiplier mirrored onto negative frequencies"></svg>
+    <div class="axb" data-ax="mir"></div>
+  </div>
 </div>
 
-<div class="p" data-panel>
-  <div class="hd"><i class="ti ti-grip-vertical hdl" aria-hidden="true" data-i18n-tip="tip_grip"></i><i class="ti ti-chevron-down chv" aria-hidden="true"></i><h3 data-i18n="pn_cal">Diode calibration</h3><span class="sub" id="cal-info"></span></div>
+<div class="secthead"><i class="ln" aria-hidden="true"></i><span data-i18n="sect_hw">Hardware — separate from the pulse design above</span><i class="ln" aria-hidden="true"></i></div>
+
+<div class="p cal" data-panel>
+  <div class="hd"><i class="ti ti-grip-vertical hdl" aria-hidden="true" data-i18n-tip="tip_grip"></i><i class="ti ti-chevron-down chv" aria-hidden="true"></i><i class="ti ti-plug-connected" aria-hidden="true" style="color:var(--text-muted)"></i><h3 data-i18n="pn_cal">Diode calibration</h3><span class="sub" id="cal-info"></span></div>
   <div data-body>
-    <p class="sub" style="margin:0 0 6px" data-i18n="cal_steps">Step 1 — drive the setup with the reference triangle. Step 2 — capture the photodiode. Step 3 — upload that capture here.</p>
+    <p class="sub" style="margin:0 0 8px" data-i18n="cal_why">The amplifier and the modulator do not respond proportionally: send an ideal envelope and the diode sees a distorted one. Here you measure that distortion, invert it, and apply the inverse in advance, so the two cancel.</p>
+    <ol class="steps">
+      <li data-i18n="cs1">Download the triangle file below and load it into your generator as the output waveform. It is 16384 points, values 0 to 1, one per line.</li>
+      <li data-i18n="cs2">Run the setup as during a normal measurement: generator, modulator, laser, photodiode.</li>
+      <li data-i18n="cs3">Capture the photodiode on the oscilloscope over at least one full triangle period and export it as CSV with two columns, time and voltage.</li>
+      <li data-i18n="cs4">Upload that capture below. The app finds the peak, then the two minima either side, and uses the rising edge between them — that is the only monotonic part, and only a monotonic function can be inverted.</li>
+      <li data-i18n="cs5">Look at the transfer chart. The blue measured curve should bend away from the dashed y = x line. If it lies on it, your hardware is already linear and no compensation is needed.</li>
+      <li data-i18n="cs6">Check the quality readout. R² below 0.99 usually means a noisy or clipped capture — repeat it with a cleaner signal rather than trusting the fit.</li>
+      <li data-i18n="cs7">Leave the compensate box ticked in the export bar. The CSV is then pre-distorted so that the diode sees the envelope you designed.</li>
+    </ol>
+    <p class="sub" style="margin:0 0 6px" data-i18n="cal_tri">A triangle is used because any departure from a straight line is visible at a glance, and because its rising edge covers the whole amplitude range exactly once.</p>
     <div class="row">
       <button class="tl" id="dl-tri" data-i18n-tip="tip_tri"><i class="ti ti-triangle" aria-hidden="true"></i><span data-i18n="b_tri">Triangle drive CSV</span></button>
       <button class="tl" id="dl-ex" data-i18n-tip="tip_exf"><i class="ti ti-file-description" aria-hidden="true"></i><span data-i18n="b_exf">Example capture CSV</span></button>
@@ -250,7 +298,9 @@ footer a{color:var(--text-accent)}
     </div>
     <p class="err" id="cal-err" style="display:none"></p>
     <svg id="svg-diode" viewBox="0 0 652 150" width="100%" role="img" data-tip-anchor="below" data-i18n-tip="tip_cdio" aria-label="Imported diode trace"></svg>
+    <div class="axb" data-ax="dio"></div>
     <svg id="svg-tr" viewBox="0 0 652 250" width="100%" role="img" data-tip-anchor="below" data-i18n-tip="tip_ctr" aria-label="Transfer curve"></svg>
+    <div class="axb" data-ax="tr"></div>
     <div class="hr"></div>
     <div class="row">
       <span class="sub" data-i18n="l_inv">Inverse function</span>
@@ -332,8 +382,24 @@ sub_mir:"m jest funkcją |f|",bd_prev:"podgląd",bd_wait:"czeka",bd_exact:"dokł
 b_move:"Przesuń",b_add:"Dodaj",b_del:"Usuń",b_pan:"Przesuwaj",b_fit:"Dopasuj",b_rst:"Reset",b_rem:"Usuń",b_fitk:"Dopasuj węzły",b_sreset:"Przywróć wygląd",
 b_tri:"CSV z trójkątem",b_exf:"Przykładowy odczyt CSV",b_demo:"Wczytaj demo",b_clr:"Wyczyść",b_savec:"Zapisz współczynniki",b_apply:"Zastosuj",b_dl:"Pobierz CSV",b_saved:"Zapisano",b_working:"Liczę…",
 lg_eq:"równanie",lg_spl:"splajn m",lg_bef:"przed",lg_aft:"po",lg_env:"obwiednia F(t)",lg_pre:"sgn·g(|F|) przedzniekształcona",
+lg_ein:"wejściowa F(τ)",lg_erec:"odtworzona, ta sama skala",
+sect_hw:"Sprzęt — osobno od projektowania impulsu",
+ax_xt:"tiki x",ax_yt:"tiki y",ax_sx:"skala x",ax_sy:"skala y",ax_lin:"próg liniowy",ax_rst:"Auto",
+tip_axt:"Liczba tików albo lista wartości po przecinku. Puste = automatycznie",
+tip_axs:"Rozciąga oś wokół jej środka",
+tip_axlin:"Poniżej tej wartości oś jest liniowa, powyżej logarytmiczna. Puste = automatycznie",
+tip_axrst:"Przywraca automatyczne osie tego wykresu",
 ph_rec:"Uruchamia się po naciśnięciu Zastosuj.",ph_out:"Naciśnij Zastosuj, aby wykonać odwrócenie i zbudować plik CSV.",
-cal_steps:"Krok 1 — pobudź układ trójkątem referencyjnym. Krok 2 — zarejestruj fotodiodę. Krok 3 — wgraj ten odczyt tutaj.",
+key_b:"obwiednia startowa",key_r:"nowa obwiednia po mnożniku",key_o:"to, co projektujesz",key_g:"odniesienia",
+cal_why:"Wzmacniacz i modulator nie odpowiadają proporcjonalnie: wysyłasz idealną obwiednię, a dioda widzi zniekształconą. Tutaj mierzysz to zniekształcenie, odwracasz je i nakładasz odwrotność z wyprzedzeniem, żeby jedno skasowało drugie.",
+cs1:"Pobierz poniżej plik z trójkątem i wgraj go do generatora jako przebieg wyjściowy. To 16384 punkty, wartości od 0 do 1, po jednej w wierszu.",
+cs2:"Uruchom stanowisko jak przy zwykłym pomiarze: generator, modulator, laser, fotodioda.",
+cs3:"Zarejestruj sygnał fotodiody na oscyloskopie przez co najmniej jeden pełny okres trójkąta i wyeksportuj jako CSV z dwiema kolumnami: czas i napięcie.",
+cs4:"Wgraj ten odczyt poniżej. Aplikacja znajdzie szczyt, potem dwa minima po jego bokach, i użyje zbocza narastającego między nimi — to jedyny odcinek monotoniczny, a tylko funkcję monotoniczną da się odwrócić.",
+cs5:"Spójrz na wykres transferu. Niebieska krzywa zmierzona powinna odginać się od przerywanej prostej y = x. Jeśli leży na niej, twój sprzęt jest już liniowy i kompensacja nie jest potrzebna.",
+cs6:"Sprawdź jakość dopasowania. R² poniżej 0,99 zwykle oznacza zaszumiony albo obcięty odczyt — powtórz pomiar, zamiast ufać takiemu dopasowaniu.",
+cs7:"Zostaw zaznaczone pole „kompensuj” w pasku eksportu. Plik CSV będzie wtedy wstępnie zniekształcony tak, żeby dioda zobaczyła zaprojektowaną obwiednię.",
+cal_tri:"Trójkąt jest użyty dlatego, że każde odejście od linii prostej widać na nim od razu, a jego zbocze narastające pokrywa cały zakres amplitudy dokładnie raz.",
 st_nocal:"brak kalibracji",st_nosel:"Nie wybrano węzła",st_knot:"Węzeł",st_locked:"(f zablokowane)",st_knots:"węzłów",st_area:"pole",st_peak:"szczyt",st_comp:"skompensowana",st_byhand:"wpisane ręcznie",st_notrace:"Brak wczytanego przebiegu",st_nodata:"Wgraj odczyt, wczytaj demo albo wpisz współczynniki poniżej",st_handonly:"Współczynniki wpisane ręcznie — brak przebiegu",
 st_edge:"użyte zbocze narastające",st_raw:"dane surowe",st_refl:"odbite",st_invf:"funkcja odwrotna",st_pts:"punktów",st_fitted:"Dopasowano",st_dev:"maks. odchylenie",st_rows:"wierszy",st_steps:"Kroki odwracania",st_order:"z core.run, pełna siatka",
 st_uns:"bez znaku",st_sig:"ze znakiem",st_applied:"zastosowano sgn·g(|F|)",st_rawenv:"obwiednia surowa",st_nocomp:"bez kompensacji",st_pre:"przedzniekształcona",
@@ -368,8 +434,24 @@ sub_mir:"m is a function of |f|",bd_prev:"preview",bd_wait:"waiting",bd_exact:"e
 b_move:"Move",b_add:"Add",b_del:"Delete",b_pan:"Pan",b_fit:"Fit",b_rst:"Reset",b_rem:"Remove",b_fitk:"Fit knots",b_sreset:"Reset appearance",
 b_tri:"Triangle drive CSV",b_exf:"Example capture CSV",b_demo:"Load demo",b_clr:"Clear",b_savec:"Save coefficients",b_apply:"Apply",b_dl:"Download CSV",b_saved:"Saved",b_working:"Computing…",
 lg_eq:"equation",lg_spl:"spline m",lg_bef:"before",lg_aft:"after",lg_env:"envelope F(t)",lg_pre:"sgn·g(|F|) pre-distorted",
+lg_ein:"input F(τ)",lg_erec:"reconstructed, same scale",
+sect_hw:"Hardware — separate from the pulse design above",
+ax_xt:"x ticks",ax_yt:"y ticks",ax_sx:"x scale",ax_sy:"y scale",ax_lin:"linthresh",ax_rst:"Auto",
+tip_axt:"A tick count, or a comma separated list of values. Empty = automatic",
+tip_axs:"Stretches the axis about its centre",
+tip_axlin:"Below this value the axis is linear, above it logarithmic. Empty = automatic",
+tip_axrst:"Restores automatic axes for this chart",
 ph_rec:"Runs when you press apply.",ph_out:"Press apply to run the inversion and build the CSV.",
-cal_steps:"Step 1 — drive the setup with the reference triangle. Step 2 — capture the photodiode. Step 3 — upload that capture here.",
+key_b:"starting envelope",key_r:"new envelope after the multiplier",key_o:"what you design",key_g:"references",
+cal_why:"The amplifier and the modulator do not respond proportionally: send an ideal envelope and the diode sees a distorted one. Here you measure that distortion, invert it, and apply the inverse in advance, so the two cancel.",
+cs1:"Download the triangle file below and load it into your generator as the output waveform. It is 16384 points, values 0 to 1, one per line.",
+cs2:"Run the setup as during a normal measurement: generator, modulator, laser, photodiode.",
+cs3:"Capture the photodiode on the oscilloscope over at least one full triangle period and export it as CSV with two columns, time and voltage.",
+cs4:"Upload that capture below. The app finds the peak, then the two minima either side, and uses the rising edge between them — that is the only monotonic part, and only a monotonic function can be inverted.",
+cs5:"Look at the transfer chart. The blue measured curve should bend away from the dashed y = x line. If it lies on it, your hardware is already linear and no compensation is needed.",
+cs6:"Check the quality readout. R² below 0.99 usually means a noisy or clipped capture — repeat it with a cleaner signal rather than trusting the fit.",
+cs7:"Leave the compensate box ticked in the export bar. The CSV is then pre-distorted so that the diode sees the envelope you designed.",
+cal_tri:"A triangle is used because any departure from a straight line is visible at a glance, and because its rising edge covers the whole amplitude range exactly once.",
 st_nocal:"no calibration",st_nosel:"No knot selected",st_knot:"Knot",st_locked:"(locked f)",st_knots:"knots",st_area:"area",st_peak:"peak",st_comp:"compensated",st_byhand:"entered by hand",st_notrace:"No trace loaded",st_nodata:"Import a capture, load the demo, or type coefficients below",st_handonly:"Coefficients entered by hand — no trace",
 st_edge:"rising edge used",st_raw:"raw data",st_refl:"reflected",st_invf:"inverse function",st_pts:"points",st_fitted:"Fitted",st_dev:"max deviation",st_rows:"rows",st_steps:"Inversion steps",st_order:"from core.run, full grid",
 st_uns:"unsigned",st_sig:"signed",st_applied:"sgn·g(|F|) applied",st_rawenv:"raw envelope",st_nocomp:"no compensation",st_pre:"pre-distorted",
@@ -402,10 +484,16 @@ function loc(){return S.lang==="pl"?"pl-PL":"en-GB";}
 /* ====================================================================== */
 /*  SIATKA PODGLĄDU (zgrubna, tylko do rysowania na żywo)                 */
 /* ====================================================================== */
-var N=4096,T0=-4,T1=4,DT=(T1-T0)/(N-1),TWOPI=2*Math.PI;
+// N jest NIEPARZYSTE, dokładnie jak w oryginale (261 569). To nie jest detal:
+// tylko wtedy istnieje próbka dokładnie w t = 0, symetryzacja dystrybuanty
+// czyni sin(cdf) nieparzystym względem niej, a ifftshift przenosi ją na
+// początek układu DFT. Transformata jest wtedy czysto urojona.
+// Przy parzystym N oś symetrii mija początek układu o pół próbki i powstaje
+// pasożytnicza część rzeczywista rosnąca ku wysokim częstotliwościom.
+var N=4097,HALF=(N-1)/2,T0=-4,T1=4,DT=(T1-T0)/(N-1),TWOPI=2*Math.PI;
 var t=new Float64Array(N);for(var i0=0;i0<N;i0++)t[i0]=T0+i0*DT;
-var DF=1/(N*DT),NYQ=(N/2)*DF,U_MIN=Math.log10(DF),U_MAX=Math.log10(NYQ);
-var freq=new Float64Array(N);for(var i1=0;i1<N;i1++)freq[i1]=(i1-N/2)*DF;
+var DF=1/(N*DT),NYQ=HALF*DF,U_MIN=Math.log10(DF),U_MAX=Math.log10(NYQ);
+var freq=new Float64Array(N);for(var i1=0;i1<N;i1++)freq[i1]=(i1-HALF)*DF;
 // pełna siatka oryginału — pokazywana w nagłówku i używana przy eksporcie
 var N_FULL=16348*4*2*2+1;
 
@@ -432,16 +520,26 @@ setTimeout(function(){URL.revokeObjectURL(a.href);},4000);}
 /* ====================================================================== */
 /*  WYGLĄD                                                                */
 /* ====================================================================== */
-var PAL={cove:{b:"#2a78d6",r:"#e24b4a",a:"#1baf7a",v:"#6250d6",o:"#eb6834",g:"#898781"},
-okabe:{b:"#0072B2",r:"#D55E00",a:"#009E73",v:"#CC79A7",o:"#E69F00",g:"#999999"},
-mpl:{b:"#1f77b4",r:"#d62728",a:"#2ca02c",v:"#9467bd",o:"#ff7f0e",g:"#7f7f7f"}};
-var C={b:"#2a78d6",r:"#e24b4a",a:"#1baf7a",v:"#6250d6",o:"#eb6834",g:"#898781",
+/* Konwencja kolorystyczna, jedna dla całej strony:
+   b  niebieski        obwiednia startowa i wszystko z niej policzone
+   b2 jasnoniebieski   to samo, wielkość drugorzędna (np. Re p(f), które ma być zerem)
+   r  czerwony         nowa obwiednia po nałożeniu mnożnika i wszystko z niej
+   r2 jasnoczerwony    ta sama nowa obwiednia, ale przedzniekształcona pod sprzęt
+   o  pomarańczowy     obiekt projektowany ręcznie: splajn m, dopasowana krzywa g
+   g  szary            odniesienia i konstrukcje pomocnicze
+   v  fioletowy        podgląd wpisanego równania, jeszcze niezatwierdzony        */
+var PAL={
+cove:{b:"#2a78d6",b2:"#7fb0e8",r:"#e24b4a",r2:"#f0a08f",o:"#eb6834",g:"#898781",v:"#6250d6"},
+okabe:{b:"#0072B2",b2:"#56B4E9",r:"#D55E00",r2:"#EDA282",o:"#E69F00",g:"#999999",v:"#CC79A7"},
+mpl:{b:"#1f77b4",b2:"#aec7e8",r:"#d62728",r2:"#ff9896",o:"#ff7f0e",g:"#7f7f7f",v:"#9467bd"}};
+var C={b:"#2a78d6",b2:"#7fb0e8",r:"#e24b4a",r2:"#f0a08f",o:"#eb6834",g:"#898781",v:"#6250d6",
 mut:"var(--text-muted)",grid:"var(--border)",bg:null,stroke:"var(--surface-2)"};
 function dashOf(k){var base={ref:"4 3",eqn:"7 3"};
 if(S.series!=="dash")return base[k]||null;
 var d={imag:"7 2",real:"2 3",mod:"10 3",spline:null,ref:"4 3",eqn:"7 3",before:"4 3",after:"10 3",renv:null,rcomp:"5 3"};
 return d[k]!==undefined?d[k]:(base[k]||null);}
-function applyTheme(){var p=PAL[S.pal];C.b=p.b;C.r=p.r;C.a=p.a;C.v=p.v;C.o=p.o;C.g=p.g;
+function applyTheme(){var p=PAL[S.pal];
+C.b=p.b;C.b2=p.b2;C.r=p.r;C.r2=p.r2;C.o=p.o;C.g=p.g;C.v=p.v;
 if(S.theme==="auto")document.documentElement.removeAttribute("data-theme");
 else document.documentElement.setAttribute("data-theme",S.theme);
 if(S.surface==="dark"){C.bg="#15171c";C.grid="#2c313b";C.mut="#98a0ab";C.stroke="#15171c";}
@@ -468,7 +566,8 @@ document.getElementById("gear").setAttribute("aria-label",tr("settings"));
 document.title=tr("title");
 document.documentElement.lang=S.lang;
 document.getElementById("grid-info").textContent=
- "N = "+N_FULL.toLocaleString(loc())+" · df = "+DF.toFixed(3);}
+ "N = "+N_FULL.toLocaleString(loc())+" · df = "+DF.toFixed(3);
+buildAxBars();}
 
 /* ====================================================================== */
 /*  PARSER RÓWNAŃ (bez eval)                                              */
@@ -529,7 +628,31 @@ vr=re[p]*cr-im[p]*ci;vi=re[p]*ci+im[p]*cr;
 re[i+k]=ur+vr;im[i+k]=ui+vi;re[p]=ur-vr;im[p]=ui-vi;
 nr=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=nr;}}}
 if(inv)for(i=0;i<n;i++){re[i]/=n;im[i]/=n;}}
-function roll(a){var n=a.length,o=new Float64Array(n),h=n/2;for(var i=0;i<n;i++)o[i]=a[(i+h)%n];return o;}
+// Transformata dowolnej długości metodą Bluesteina: splot z sygnałem
+// ćwierkającym, liczony przez FFT radix-2 o długości będącej potęgą dwójki.
+// Potrzebna, bo N jest nieparzyste.
+function nextPow2(n){var m=1;while(m<n)m<<=1;return m;}
+function fftAny(re,im,inv){
+var n=re.length,k,ang,c,s,xr,xi;
+if((n&(n-1))===0){fft(re,im,inv);return;}
+var m=nextPow2(2*n-1),sgn=inv?1:-1;
+var ar=new Float64Array(m),ai=new Float64Array(m),
+    br=new Float64Array(m),bi=new Float64Array(m);
+for(k=0;k<n;k++){ang=sgn*Math.PI*((k*k)%(2*n))/n;c=Math.cos(ang);s=Math.sin(ang);
+ar[k]=re[k]*c-im[k]*s;ai[k]=re[k]*s+im[k]*c;}
+for(k=0;k<n;k++){ang=-sgn*Math.PI*((k*k)%(2*n))/n;c=Math.cos(ang);s=Math.sin(ang);
+br[k]=c;bi[k]=s;if(k){br[m-k]=c;bi[m-k]=s;}}
+fft(ar,ai,false);fft(br,bi,false);
+for(k=0;k<m;k++){xr=ar[k]*br[k]-ai[k]*bi[k];xi=ar[k]*bi[k]+ai[k]*br[k];ar[k]=xr;ai[k]=xi;}
+fft(ar,ai,true);
+for(k=0;k<n;k++){ang=sgn*Math.PI*((k*k)%(2*n))/n;c=Math.cos(ang);s=Math.sin(ang);
+re[k]=ar[k]*c-ai[k]*s;im[k]=ar[k]*s+ai[k]*c;}
+if(inv)for(k=0;k<n;k++){re[k]/=n;im[k]/=n;}}
+// Przesunięcia jak w numpy. Dla nieparzystego N nie są sobie równe.
+function ifftshift(a){var n=a.length,h=Math.floor(n/2),o=new Float64Array(n);
+for(var i=0;i<n;i++)o[i]=a[(i+h)%n];return o;}
+function fftshift(a){var n=a.length,h=Math.floor(n/2),o=new Float64Array(n);
+for(var i=0;i<n;i++)o[i]=a[(i-h+n)%n];return o;}
 function sgw(win,ord){var h=(win-1)/2,d=ord+1,M=[],p,q,s,z,c,mx,r,f,k,v,w,i;
 for(p=0;p<d;p++){M.push([]);for(q=0;q<d;q++){s=0;for(z=-h;z<=h;z++)s+=Math.pow(z,p+q);M[p].push(s);}M[p].push(p===0?1:0);}
 for(c=0;c<d;c++){mx=c;for(r=c+1;r<d;r++)if(Math.abs(M[r][c])>Math.abs(M[mx][c]))mx=r;
@@ -569,7 +692,8 @@ var h=xs[lo+1]-xs[lo],s=(u-xs[lo])/h,s2=s*s,s3=s2*s;
 return ys[lo]*(2*s3-3*s2+1)+h*m[lo]*(s3-2*s2+s)+ys[lo+1]*(-2*s3+3*s2)+h*m[lo+1]*(s3-s2);};}
 
 var uid=1,knots=[],sel=null,mode="move",EQ=null;
-var vis={imag:true,real:true,mod:true,ref:true,eqn:true,spline:true,before:true,after:true,renv:true,rcomp:true};
+var vis={imag:true,real:true,mod:true,ref:true,eqn:true,spline:true,before:true,after:true,
+renv:true,rcomp:true,einp:true,erec:true};
 function expKnots(){var b=[DF,0.25,0.5,0.75,0.9,0.95,1,1.05,1.1,1.2,1.5,3,NYQ];
 return b.map(function(f,i){return{id:uid++,f:f,v:Math.exp(-Math.pow(Math.abs(f),44)),pin:i===0};});}
 function sorted(){return knots.slice().sort(function(a,b){return a.f-b.f;});}
@@ -617,8 +741,8 @@ function forward(x){var cdf=new Float64Array(N),acc=0,i;
 for(i=0;i<N;i++){acc+=x[i];cdf[i]=acc*DT;}
 var c2=new Float64Array(N);for(i=0;i<N;i++)c2[i]=0.5*(cdf[i]+(TWOPI-cdf[N-1-i]));
 var s=new Float64Array(N);for(i=0;i<N;i++)s[i]=Math.sin(c2[i]);
-var re=roll(s),im=new Float64Array(N);fft(re,im,false);
-return{cdf:c2,sin:s,Fr:roll(re),Fi:roll(im)};}
+var re=ifftshift(s),im=new Float64Array(N);fftAny(re,im,false);
+return{cdf:c2,sin:s,Fr:fftshift(re),Fi:fftshift(im)};}
 
 /* ====================================================================== */
 /*  RYSOWANIE                                                             */
@@ -636,27 +760,129 @@ function tline(g,pts,col,w,dash){if(pts.length<2)return;
 var a={d:path(pts),fill:"none",stroke:col,"stroke-width":w||1.5,"stroke-linejoin":"round"};
 if(dash)a["stroke-dasharray"]=dash;g.appendChild(el("path",a));}
 
-function drawXY(svg,series,W,H){var L=44,R=10,Tp=10,B=22,g=frame(svg,W,H,L,R,Tp,B);
-var t0=-1.6,t1=1.6,mx=0,mn=0,i,k;
+/* ---------------- sterowanie osiami ---------------- */
+var AX={};
+// ox, oy to przesunięcie widoku myszką, w ułamkach widocznego zakresu
+["fft","flt","env","rec","mir","dio","tr"].forEach(function(k){
+AX[k]={xt:"",yt:"",sx:1,sy:1,ox:0,oy:0,lin:""};});
+function axClear(k){AX[k]={xt:"",yt:"",sx:1,sy:1,ox:0,oy:0,lin:""};}
+// zakres po rozciągnięciu suwakiem i przesunięciu myszką
+function axX(k,lo,hi){var A=AX[k],r=stretch(lo,hi,A.sx),s=r[1]-r[0];
+return[r[0]+A.ox*s,r[1]+A.ox*s];}
+function axY(k,lo,hi){var A=AX[k],r=stretch(lo,hi,A.sy),s=r[1]-r[0];
+return[r[0]+A.oy*s,r[1]+A.oy*s];}
+// Przeciąganie wykresu myszką — ten sam gest co narzędzie Przesuwaj
+// na planszy głównej, tylko bez przełączania trybu, bo tu nie ma węzłów.
+function attachPan(svgEl,key,sharedX){
+var st=null;
+svgEl.style.cursor="grab";
+svgEl.addEventListener("pointerdown",function(e){
+st={x:e.clientX,y:e.clientY,ox:AX[key].ox,oy:AX[key].oy,u0:view.u0,u1:view.u1};
+try{svgEl.setPointerCapture(e.pointerId);}catch(err){}
+svgEl.style.cursor="grabbing";e.preventDefault();});
+svgEl.addEventListener("pointermove",function(e){
+if(!st)return;
+var r=svgEl.getBoundingClientRect();
+var fx=(e.clientX-st.x)/(r.width||1),fy=(e.clientY-st.y)/(r.height||1);
+if(sharedX){var span=st.u1-st.u0,sh=-fx*span,u0=st.u0+sh,u1=st.u1+sh;
+if(u0<U_MIN){u1+=U_MIN-u0;u0=U_MIN;}
+if(u1>U_MAX){u0-=u1-U_MAX;u1=U_MAX;}
+view.u0=u0;view.u1=u1;}
+else AX[key].ox=st.ox-fx;
+AX[key].oy=st.oy+fy;
+redrawAll();});
+var end=function(){if(st){st=null;svgEl.style.cursor="grab";}};
+svgEl.addEventListener("pointerup",end);
+svgEl.addEventListener("pointercancel",end);}
+// "6" -> sześć równo rozłożonych tików; "0.1, 1, 10" -> dokładnie te wartości
+function parseTicks(str,lo,hi){
+var s=String(str||"").trim();if(!s)return null;
+if(!/[,;\s]/.test(s)){
+var n=parseInt(s,10),o,i;
+if(isFinite(n)&&n>=2&&n<=24&&String(n)===s){o=[];
+for(i=0;i<n;i++)o.push(lo+(hi-lo)*i/(n-1));return o;}
+var v=parseFloat(s);return isFinite(v)?[v]:null;}
+var a=s.split(/[,;\s]+/).map(parseFloat).filter(function(v){return isFinite(v);});
+return a.length?a:null;}
+function stretch(lo,hi,s){var c=(lo+hi)/2,h=(hi-lo)/(2*(s||1));return[c-h,c+h];}
+function axNum(k,key){var v=parseFloat(AX[k][key]);return isFinite(v)&&v>0?v:null;}
+function fmtTick(v){
+var a=Math.abs(v);
+if(a===0)return "0";
+if(a>=1e4||a<1e-3)return v.toExponential(1);
+return String(Math.round(v*1e4)/1e4);}
+function axBar(key,hasLin){
+var host=document.querySelector('[data-ax="'+key+'"]');if(!host)return;
+while(host.firstChild)host.removeChild(host.firstChild);
+var st=AX[key];
+var add=function(lbl,node,tipKey){
+var w=document.createElement("span");w.className="axi";
+var l=document.createElement("span");l.className="axl";l.textContent=tr(lbl);
+w.appendChild(l);w.appendChild(node);
+if(tipKey)w.setAttribute("data-tip",tr(tipKey));
+host.appendChild(w);};
+var txtIn=function(prop,wpx){
+var e=document.createElement("input");e.type="text";e.value=st[prop];e.style.width=wpx+"px";
+e.addEventListener("change",function(){st[prop]=e.value;redrawAll();});return e;};
+var rng=function(prop){
+var e=document.createElement("input");e.type="range";
+e.min="0.25";e.max="4";e.step="0.05";e.value=st[prop];
+e.addEventListener("input",function(){st[prop]=parseFloat(e.value);redrawAll();});return e;};
+add("ax_xt",txtIn("xt",68),"tip_axt");
+add("ax_yt",txtIn("yt",68),"tip_axt");
+add("ax_sx",rng("sx"),"tip_axs");
+add("ax_sy",rng("sy"),"tip_axs");
+if(hasLin)add("ax_lin",txtIn("lin",72),"tip_axlin");
+var b=document.createElement("button");b.textContent=tr("ax_rst");
+b.setAttribute("data-tip",tr("tip_axrst"));
+b.onclick=function(){axClear(key);axBar(key,hasLin);redrawAll();};
+host.appendChild(b);}
+function buildAxBars(){axBar("fft",true);axBar("flt",true);axBar("env",false);
+axBar("rec",false);axBar("mir",false);axBar("dio",false);axBar("tr",false);}
+function redrawAll(){drawFFT();drawFiltered();drawEnv();drawMirror();drawCal();
+if(LAST)drawRec();}
+
+function drawXY(svg,series,W,H,key){var L=48,R=10,Tp=10,B=22,g=frame(svg,W,H,L,R,Tp,B);
+var A=AX[key]||{xt:"",yt:"",sx:1,sy:1,ox:0,oy:0};
+var xr=axX(key,-1.6,1.6),t0=xr[0],t1=xr[1];
+var mx=0,mn=0,i;
 series.forEach(function(s){for(i=0;i<s.x.length;i++)if(s.x[i]>=t0&&s.x[i]<=t1){
 mx=Math.max(mx,s.y[i]);mn=Math.min(mn,s.y[i]);}});
-var pad=(mx-mn)*0.1||1,hi=mx+pad,lo=mn-pad;
+var pad=(mx-mn)*0.1||1,yr=axY(key,mn-pad,mx+pad),lo=yr[0],hi=yr[1];
 var X=function(v){return L+(v-t0)/(t1-t0)*(W-R-L);},
     Y=function(v){return H-B-(v-lo)/(hi-lo)*(H-Tp-B);};
-for(k=-1;k<=1;k++){var px=X(k*1.5);
+var xt=parseTicks(A.xt,t0,t1),yt=parseTicks(A.yt,lo,hi),k,px;
+if(!xt){xt=[];for(k=-1;k<=1;k++)xt.push(k*1.5);}
+xt.forEach(function(v){if(v<t0||v>t1)return;px=X(v);
 g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.5}));
-txt(g,px,H-8,(k*1.5).toFixed(1));}
-if(lo<0)g.appendChild(el("line",{x1:L,y1:Y(0),x2:W-R,y2:Y(0),stroke:C.grid,"stroke-width":1,opacity:0.7}));
-txt(g,L-5,Y(0)+3,"0","end");txt(g,L-5,Y(mx)+3,mx.toFixed(1),"end");
+txt(g,px,H-8,fmtTick(v));});
+if(lo<0&&hi>0)g.appendChild(el("line",{x1:L,y1:Y(0),x2:W-R,y2:Y(0),stroke:C.grid,"stroke-width":1,opacity:0.7}));
+if(yt)yt.forEach(function(v){if(v<lo||v>hi)return;
+g.appendChild(el("line",{x1:L,y1:Y(v),x2:W-R,y2:Y(v),stroke:C.grid,"stroke-width":1,opacity:0.3}));
+txt(g,L-5,Y(v)+3,fmtTick(v),"end");});
+else{txt(g,L-5,Y(0)+3,"0","end");txt(g,L-5,Y(mx)+3,fmtTick(mx),"end");}
 series.forEach(function(s){var p=[],st=Math.max(1,Math.floor(s.x.length/1400));
 for(i=0;i<s.x.length;i+=st)if(s.x[i]>=t0&&s.x[i]<=t1)p.push([X(s.x[i]),Y(s.y[i])]);
 tline(g,p,s.c,2,s.d);});
 txt(g,(L+W-R)/2,H-1,tr("ax_time"));}
 
+// Obwiednia wejściowa, a po przebiegu także odtworzona — w tej samej skali,
+// czyli bez normalizacji do jedynki, żeby dało się je porównać wprost.
+function drawEnv(){var ser=[];
+if(!X0)return;
+if(vis.einp)ser.push({x:t,y:X0,c:C.b,d:dashOf("renv")});
+if(vis.erec&&LAST&&LAST.raw)ser.push({x:LAST.t,y:LAST.raw,c:C.r,d:"5 3"});
+if(!ser.length)ser.push({x:t,y:X0,c:C.b});
+drawXY(document.getElementById("svg-env"),ser,652,150,"env");}
+
 var view={u0:U_MIN,u1:Math.log10(0.25*NYQ)},ST={},P0=null,X0=null,LAST=null;
 var svgF=document.getElementById("svg-fft");
-function drawFFT(){var W=652,H=270,L=50,R=40,Tp=12,B=26,g=frame(svgF,W,H,L,R,Tp,B);
-var u0=view.u0,u1=view.u1,fmin=Math.pow(10,u0),fmax=Math.pow(10,u1),i,f,e,px;
+function drawFFT(){var W=652,H=270,L=56,R=40,Tp=12,B=26,g=frame(svgF,W,H,L,R,Tp,B);
+var A=AX.fft;
+var vr=stretch(view.u0,view.u1,A.sx);
+var u0=Math.max(U_MIN,vr[0]),u1=Math.min(U_MAX,vr[1]);
+if(u1-u0<0.05){u0=view.u0;u1=view.u1;}
+var fmin=Math.pow(10,u0),fmax=Math.pow(10,u1),i,f,e,px;
 var X=function(u){return L+(u-u0)/(u1-u0)*(W-R-L);},
     Yv=function(v){return H-B-v*(H-Tp-B)*0.92;};
 ST={X:X,Yv:Yv,u0:u0,u1:u1,L:L,R:R,W:W,H:H,Tp:Tp,B:B};
@@ -665,27 +891,38 @@ if(P0)for(i=0;i<P0.f.length;i++){f=P0.f[i];if(f<fmin||f>fmax)continue;
 if(vis.imag)M=Math.max(M,Math.abs(P0.fi[i]));
 if(vis.real)M=Math.max(M,Math.abs(P0.fr[i]));
 if(vis.mod)M=Math.max(M,Math.abs(P0.fi[i]*FN(f)));}
-var lin=Math.max(M*1e-6,1e-14);
+// próg liniowy: poniżej niego oś jest liniowa, powyżej logarytmiczna
+var lin=axNum("fft","lin")||Math.max(M*1e-6,1e-14);
 var slog=function(v){return Math.sign(v)*Math.log10(1+Math.abs(v)/lin);};
-var smax=slog(M)||1;
-var Y=function(v){return H-B-(slog(v)/smax*0.46+0.5)*(H-Tp-B);};
-for(e=Math.ceil(u0);e<=Math.floor(u1);e++){px=X(e);
+var smax=(slog(M)||1)/(A.sy||1);
+var Y=function(v){return H-B-(slog(v)/smax*0.46+0.5-A.oy)*(H-Tp-B);};
+var xt=parseTicks(A.xt,fmin,fmax);
+if(xt)xt.forEach(function(v){if(v<fmin||v>fmax||v<=0)return;px=X(Math.log10(v));
+g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.6}));
+txt(g,px,H-10,fmtTick(v));});
+else for(e=Math.ceil(u0);e<=Math.floor(u1);e++){px=X(e);
 g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.6}));
 txt(g,px,H-10,"1e"+e);}
 g.appendChild(el("line",{x1:L,y1:Y(0),x2:W-R,y2:Y(0),stroke:C.grid,"stroke-width":1,opacity:0.8}));
 [0,0.5,1].forEach(function(v){txt(g,W-R+6,Yv(v)+3,v.toFixed(1),"start",C.o);
 g.appendChild(el("line",{x1:L,y1:Yv(v),x2:W-R,y2:Yv(v),stroke:C.grid,"stroke-width":1,opacity:0.25}));});
-txt(g,L-7,Tp+9,"p(f)","end");txt(g,L-7,Y(0)+3,"0","end");
-txt(g,L-7,Y(M)+3,"+"+M.toExponential(0),"end");txt(g,L-7,Y(-M)+3,"−"+M.toExponential(0),"end");
+txt(g,L-7,Tp+9,"p(f)","end");
+var yt=parseTicks(A.yt,-M,M);
+if(yt)yt.forEach(function(v){var y=Y(v);if(y<Tp||y>H-B)return;
+g.appendChild(el("line",{x1:L,y1:y,x2:W-R,y2:y,stroke:C.grid,"stroke-width":1,opacity:0.25}));
+txt(g,L-7,y+3,fmtTick(v),"end");});
+else{txt(g,L-7,Y(0)+3,"0","end");
+txt(g,L-7,Y(M)+3,"+"+M.toExponential(0),"end");
+txt(g,L-7,Y(-M)+3,"−"+M.toExponential(0),"end");}
 txt(g,W-R+6,Tp+9,"m","start",C.o);
 if(P0){var st=Math.max(1,Math.floor(P0.f.length/700)),pi=[],pr=[],pm=[],x;
 for(i=0;i<P0.f.length;i+=st){f=P0.f[i];if(f<fmin||f>fmax)continue;x=X(Math.log10(f));
 if(vis.imag)pi.push([x,Y(P0.fi[i])]);
 if(vis.real)pr.push([x,Y(P0.fr[i])]);
 if(vis.mod)pm.push([x,Y(P0.fi[i]*FN(f))]);}
-if(vis.real)tline(g,pr,C.r,1.1,dashOf("real"));
-if(vis.imag)tline(g,pi,C.b,1.1,dashOf("imag"));
-if(vis.mod)tline(g,pm,C.a,1.6,dashOf("mod"));}
+if(vis.real)tline(g,pr,C.b2,1.1,"2 3");
+if(vis.imag)tline(g,pi,C.b,1.2,dashOf("imag"));
+if(vis.mod)tline(g,pm,C.r,1.6,dashOf("mod"));}
 var NS=1200,ref=[],spl=[],eqp=[],u,q;
 for(i=0;i<=NS;i++){u=u0+(u1-u0)*i/NS;f=Math.pow(10,u);
 ref.push([X(u),Yv(Math.exp(-Math.pow(f,44)))]);
@@ -707,38 +944,59 @@ txt(g,(L+W-R)/2,H-1,tr("ax_freq"));
 document.getElementById("knot-info").textContent="f "+Math.pow(10,u0).toPrecision(2)+" … "+Math.pow(10,u1).toPrecision(3);}
 
 var svgFl=document.getElementById("svg-flt");
-function drawFiltered(){var W=652,H=170,L=46,R=12,Tp=10,B=24,g=frame(svgFl,W,H,L,R,Tp,B);
+function drawFiltered(){var W=652,H=170,L=52,R=12,Tp=10,B=24,g=frame(svgFl,W,H,L,R,Tp,B);
 if(!P0)return;
-var u0=view.u0,u1=view.u1,fmin=Math.pow(10,u0),fmax=Math.pow(10,u1),i,f,e,px;
+var A=AX.flt;
+var vr=stretch(view.u0,view.u1,A.sx);
+var u0=Math.max(U_MIN,vr[0]),u1=Math.min(U_MAX,vr[1]);
+if(u1-u0<0.05){u0=view.u0;u1=view.u1;}
+var fmin=Math.pow(10,u0),fmax=Math.pow(10,u1),i,f,e,px;
 var X=function(u){return L+(u-u0)/(u1-u0)*(W-R-L);};
 var hi=-1e30;
 for(i=0;i<P0.f.length;i++){f=P0.f[i];if(f<fmin||f>fmax)continue;hi=Math.max(hi,P0.p[i]);}
-if(hi<=0)hi=1;var lo=hi*1e-20;
-var Y=function(p){return H-B-(Math.log10(Math.max(p,lo))-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo))*(H-Tp-B);};
-for(e=Math.ceil(u0);e<=Math.floor(u1);e++){px=X(e);
+if(hi<=0)hi=1;
+// próg liniowy pełni tu rolę podłogi osi: poniżej niego wszystko jest ścinane
+var lo=axNum("flt","lin")||hi*1e-20;
+if(lo>=hi)lo=hi*1e-20;
+var dr=axY("flt",Math.log10(lo),Math.log10(hi)),dlo=dr[0],dhi=dr[1];
+var Y=function(p){return H-B-(Math.log10(Math.max(p,Math.pow(10,dlo)))-dlo)/(dhi-dlo)*(H-Tp-B);};
+var xt=parseTicks(A.xt,fmin,fmax);
+if(xt)xt.forEach(function(v){if(v<fmin||v>fmax||v<=0)return;px=X(Math.log10(v));
+g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.6}));
+txt(g,px,H-9,fmtTick(v));});
+else for(e=Math.ceil(u0);e<=Math.floor(u1);e++){px=X(e);
 g.appendChild(el("line",{x1:px,y1:Tp,x2:px,y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.6}));
 txt(g,px,H-9,"1e"+e);}
-txt(g,L-6,Tp+8,"1e"+Math.round(Math.log10(hi)),"end");
-txt(g,L-6,H-B,"1e"+Math.round(Math.log10(lo)),"end");
+var yt=parseTicks(A.yt,Math.pow(10,dlo),Math.pow(10,dhi));
+if(yt)yt.forEach(function(v){if(v<=0)return;var y=Y(v);if(y<Tp||y>H-B)return;
+g.appendChild(el("line",{x1:L,y1:y,x2:W-R,y2:y,stroke:C.grid,"stroke-width":1,opacity:0.25}));
+txt(g,L-6,y+3,v.toExponential(0),"end");});
+else{txt(g,L-6,Tp+8,"1e"+Math.round(dhi),"end");
+txt(g,L-6,H-B,"1e"+Math.round(dlo),"end");}
 var st=Math.max(1,Math.floor(P0.f.length/700)),pa=[],pb=[],x,m;
 for(i=0;i<P0.f.length;i+=st){f=P0.f[i];if(f<fmin||f>fmax)continue;x=X(Math.log10(f));
 pa.push([x,Y(P0.p[i])]);m=FN(f);pb.push([x,Y(P0.p[i]*m*m)]);}
-if(vis.before)tline(g,pa,C.g,1.2,dashOf("before"));
-if(vis.after)tline(g,pb,C.a,1.6,dashOf("after"));
+if(vis.before)tline(g,pa,C.b,1.2,dashOf("before"));
+if(vis.after)tline(g,pb,C.r,1.6,dashOf("after"));
 txt(g,(L+W-R)/2,H-1,tr("ax_freq"));}
 
 var svgM=document.getElementById("svg-mir");
-function drawMirror(){var W=652,H=110,L=28,R=10,Tp=10,B=20,g=frame(svgM,W,H,L,R,Tp,B);
-var f0=-2.2,f1=2.2;
+function drawMirror(){var W=652,H=110,L=34,R=10,Tp=10,B=20,g=frame(svgM,W,H,L,R,Tp,B);
+var A=AX.mir;
+var xr=axX("mir",-2.2,2.2),f0=xr[0],f1=xr[1];
+var yr=axY("mir",0,1.16),v0=yr[0],v1=yr[1];
 var X=function(f){return L+(f-f0)/(f1-f0)*(W-R-L);},
-    Y=function(v){return H-B-v*(H-Tp-B)*0.86;};
+    Y=function(v){return H-B-(v-v0)/(v1-v0)*(H-Tp-B);};
 g.appendChild(el("line",{x1:X(0),y1:Tp,x2:X(0),y2:H-B,stroke:C.grid,"stroke-width":1}));
 var pl=[],pr=[],i,f,y;
 for(i=0;i<=400;i++){f=f0+(f1-f0)*i/400;y=Y(FN(f));(f<0?pl:pr).push([X(f),y]);}
 tline(g,pl,C.o,2,"5 4");tline(g,pr,C.o,2.5);
-txt(g,X(-1.15),Tp+11,tr("lb_mir"));txt(g,X(1.15),Tp+11,tr("lb_drawn"));
-[-2,-1,0,1,2].forEach(function(f){txt(g,X(f),H-6,f);});
-txt(g,L-4,Y(1)+3,"1","end");txt(g,L-4,Y(0)+3,"0","end");}
+txt(g,X(f0+(f1-f0)*0.26),Tp+11,tr("lb_mir"));
+txt(g,X(f0+(f1-f0)*0.74),Tp+11,tr("lb_drawn"));
+var xt=parseTicks(A.xt,f0,f1)||[-2,-1,0,1,2];
+xt.forEach(function(v){if(v<f0||v>f1)return;txt(g,X(v),H-6,fmtTick(v));});
+var yt=parseTicks(A.yt,v0,v1)||[0,1];
+yt.forEach(function(v){if(v<v0||v>v1)return;txt(g,L-4,Y(v)+3,fmtTick(v),"end");});}
 
 function drawChips(){var c=document.getElementById("chips");
 while(c.firstChild)c.removeChild(c.firstChild);
@@ -763,10 +1021,10 @@ function redraw(){rebuild();drawFFT();drawFiltered();drawMirror();drawChips();sy
 document.getElementById("nk").value=knots.length;}
 function recompute(){X0=envelope(document.getElementById("env").value);
 var A=forward(X0),f=[],p=[],fr=[],fi=[],i;
-for(i=N/2+1;i<N;i++){f.push(freq[i]);p.push(A.Fr[i]*A.Fr[i]+A.Fi[i]*A.Fi[i]);
+for(i=HALF+1;i<N;i++){f.push(freq[i]);p.push(A.Fr[i]*A.Fr[i]+A.Fi[i]*A.Fi[i]);
 fr.push(A.Fr[i]);fi.push(A.Fi[i]);}
 P0={f:f,p:p,fr:fr,fi:fi};
-drawXY(document.getElementById("svg-env"),[{x:t,y:X0,c:C.b}],652,150);
+drawEnv();
 var s=0;for(i=0;i<N;i++)s+=X0[i];
 document.getElementById("env-info").textContent=tr("st_area")+" = "+(s*DT).toFixed(4);
 redraw();}
@@ -884,23 +1142,36 @@ txt(g0,W/2,H/2,tr("st_notrace"));txt(g1,W2/2,H2/2,tr("st_nodata"));
 document.getElementById("gform").textContent="";document.getElementById("gsnip").textContent="";
 document.getElementById("fit-q").textContent="";return;}
 if(CAL.raw){var g=frame(svgD,W,H,L,R,Tp,B),rw=CAL.raw,n=rw.v.length,lo=1e30,hi=-1e30;
+var AD=AX.dio;
 for(i=0;i<n;i++){lo=Math.min(lo,rw.v[i]);hi=Math.max(hi,rw.v[i]);}
-var pad=(hi-lo)*0.08||1;lo-=pad;hi+=pad;
-var X=function(i){return L+i/(n-1)*(W-R-L);},
+var pad=(hi-lo)*0.08||1;
+var yr=axY("dio",lo-pad,hi+pad);lo=yr[0];hi=yr[1];
+var sr=axX("dio",0,n-1),s0=sr[0],s1=sr[1];
+var X=function(i){return L+(i-s0)/((s1-s0)||1)*(W-R-L);},
     Y=function(v){return H-B-(v-lo)/(hi-lo)*(H-Tp-B);};
 var st=Math.max(1,Math.floor(n/700)),p=[];
-for(i=0;i<n;i+=st)p.push([X(i),Y(rw.v[i])]);
+for(i=0;i<n;i+=st)if(i>=s0&&i<=s1)p.push([X(i),Y(rw.v[i])]);
 tline(g,p,C.g,1.2);
 var q=[],sk=Math.max(1,Math.floor((CAL.A.ix-CAL.A.i0)/300));
-for(i=CAL.A.i0;i<=CAL.A.ix;i+=sk)q.push([X(i),Y(rw.v[i])]);
+for(i=CAL.A.i0;i<=CAL.A.ix;i+=sk)if(i>=s0&&i<=s1)q.push([X(i),Y(rw.v[i])]);
 tline(g,q,C.b,2);
-txt(g,L-6,Y(hi)+8,hi.toFixed(2),"end");txt(g,L-6,Y(lo),lo.toFixed(2),"end");
+var xtd=parseTicks(AD.xt,s0,s1),ytd=parseTicks(AD.yt,lo,hi);
+if(xtd)xtd.forEach(function(v){if(v<s0||v>s1)return;
+g.appendChild(el("line",{x1:X(v),y1:Tp,x2:X(v),y2:H-B,stroke:C.grid,"stroke-width":1,opacity:0.5}));
+txt(g,X(v),H-8,fmtTick(v));});
+if(ytd)ytd.forEach(function(v){if(v<lo||v>hi)return;
+g.appendChild(el("line",{x1:L,y1:Y(v),x2:W-R,y2:Y(v),stroke:C.grid,"stroke-width":1,opacity:0.3}));
+txt(g,L-6,Y(v)+3,fmtTick(v),"end");});
+else{txt(g,L-6,Y(hi)+8,hi.toFixed(2),"end");txt(g,L-6,Y(lo),lo.toFixed(2),"end");}
 txt(g,(L+W-R)/2,H-1,tr("ax_smp"));
 txt(g,X((CAL.A.i0+CAL.A.ix)/2),Tp+10,tr("st_edge"),null,C.b);}
 else{var gh=frame(svgD,W,H,L,R,Tp,B);txt(gh,W/2,H/2,tr("st_handonly"));}
 var g2=frame(svgT,W2,H2,L2,R2,T2,B2);
+var AT=AX.tr;
+var txr=axX("tr",0,1),tyr=axY("tr",0,1);
 var SZ=Math.min(W2*0.42,H2-T2-B2),
-    X2=function(v){return L2+v*SZ;},Y2=function(v){return H2-B2-v*SZ;};
+    X2=function(v){return L2+(v-txr[0])/(txr[1]-txr[0])*SZ;},
+    Y2=function(v){return H2-B2-(v-tyr[0])/(tyr[1]-tyr[0])*SZ;};
 g2.appendChild(el("rect",{x:L2,y:H2-B2-SZ,width:SZ,height:SZ,fill:"none",stroke:C.grid,"stroke-width":1}));
 tline(g2,[[X2(0),Y2(0)],[X2(1),Y2(1)]],C.mut,1,"4 4");
 if(CAL.A){var A=CAL.A,m=A.tsc.length,sk2=Math.max(1,Math.floor(m/400)),pa=[],pb=[],x,y;
@@ -910,7 +1181,10 @@ tline(g2,pa,C.b,1.4);tline(g2,pb,C.g,1.4);}
 var pf=[];for(i=0;i<=200;i++){var xx=i/200;pf.push([X2(xx),Y2(Math.min(1.05,gfun(xx,CAL)))]);}
 tline(g2,pf,C.o,2.2);
 txt(g2,L2+SZ/2,H2-4,tr("ax_in"));
-[0,0.5,1].forEach(function(v){txt(g2,X2(v),H2-B2+12,v.toFixed(1));txt(g2,L2-6,Y2(v)+3,v.toFixed(1),"end");});
+var xtt=parseTicks(AT.xt,txr[0],txr[1])||[0,0.5,1];
+var ytt=parseTicks(AT.yt,tyr[0],tyr[1])||[0,0.5,1];
+xtt.forEach(function(v){if(v<txr[0]||v>txr[1])return;txt(g2,X2(v),H2-B2+12,fmtTick(v));});
+ytt.forEach(function(v){if(v<tyr[0]||v>tyr[1])return;txt(g2,L2-6,Y2(v)+3,fmtTick(v),"end");});
 var bx=L2+SZ+24,yy=T2+16;
 var put=function(s){txt(g2,bx,yy,s,"start",C.mut,12);yy+=19;};
 put(tr("st_invf"));put("a = "+CAL.a.toFixed(8));put("b = "+CAL.b.toFixed(8));put("c = "+CAL.c.toFixed(8));
@@ -966,7 +1240,7 @@ syncCoef();drawCal();};
 /* ====================================================================== */
 Array.prototype.forEach.call(document.querySelectorAll(".lgi"),function(b){
 b.onclick=function(){var s=b.dataset.s;vis[s]=!vis[s];
-b.classList.toggle("off",!vis[s]);drawFFT();drawFiltered();if(LAST)drawRec();};});
+b.classList.toggle("off",!vis[s]);drawFFT();drawFiltered();drawEnv();if(LAST)drawRec();};});
 Array.prototype.forEach.call(document.querySelectorAll(".tl[data-mode]"),function(b){
 b.onclick=function(){mode=b.dataset.mode;
 Array.prototype.forEach.call(document.querySelectorAll(".tl[data-mode]"),function(o){o.classList.toggle("on",o===b);});
@@ -980,6 +1254,8 @@ document.getElementById("zout").onclick=function(){zoom(1/0.65);};
 document.getElementById("zfit").onclick=function(){view={u0:U_MIN,u1:Math.log10(0.25*NYQ)};drawFFT();drawFiltered();};
 document.getElementById("rst").onclick=function(){knots=expKnots();sel=null;LAST=null;
 view={u0:U_MIN,u1:Math.log10(0.25*NYQ)};
+Object.keys(AX).forEach(function(k){AX[k]={xt:"",yt:"",sx:1,sy:1,lin:""};});
+buildAxBars();
 document.getElementById("env").value="rect";document.getElementById("meth").value="pchip";
 eqIn.value="exp(-|f|^44)";updEq();
 Object.keys(vis).forEach(function(k){vis[k]=true;});
@@ -1004,7 +1280,8 @@ var hit=(e.target.classList&&e.target.classList.contains("kn"))?knotById(parseIn
 if(mode==="del"){if(hit&&!hit.pin&&knots.length>2){var tg=snapshot();
 knots=knots.filter(function(k){return k.id!==hit.id;});
 if(sel===hit.id)sel=null;refit(tg);redraw();track("splajn-edytowany");}return;}
-if(mode==="pan"){panStart={x:d.px,u0:view.u0,u1:view.u1};svgF.setPointerCapture(e.pointerId);return;}
+if(mode==="pan"){panStart={x:d.px,y:d.py,u0:view.u0,u1:view.u1,oy:AX.fft.oy};
+svgF.setPointerCapture(e.pointerId);return;}
 if(mode==="add"){if(d.px<ST.L||d.px>ST.W-ST.R||d.py<ST.Tp||d.py>ST.H-ST.B)return;
 var nf=Math.min(NYQ,Math.max(DF*1.02,Math.pow(10,d.u)));
 var k={id:uid++,f:nf,v:FN(nf),pin:false},tg2=snapshot();
@@ -1016,7 +1293,9 @@ if(panStart){var d=toData(e),span=panStart.u1-panStart.u0;
 var sh=(panStart.x-d.px)/(ST.W-ST.R-ST.L)*span,u0=panStart.u0+sh,u1=panStart.u1+sh;
 if(u0<U_MIN){u1+=U_MIN-u0;u0=U_MIN;}
 if(u1>U_MAX){u0-=u1-U_MAX;u1=U_MAX;}
-view.u0=Math.max(U_MIN,u0);view.u1=Math.min(U_MAX,u1);drawFFT();drawFiltered();return;}
+view.u0=Math.max(U_MIN,u0);view.u1=Math.min(U_MAX,u1);
+AX.fft.oy=panStart.oy+(d.py-panStart.y)/(ST.H-ST.Tp-ST.B);
+drawFFT();drawFiltered();return;}
 if(!drag)return;var d2=toData(e);drag.v=d2.v;
 if(!drag.pin)drag.f=Math.min(NYQ,Math.max(DF*1.02,Math.pow(10,d2.u)));
 rebuild();drawFFT();drawFiltered();drawMirror();syncSel();track("splajn-edytowany");});
@@ -1152,12 +1431,12 @@ while(rw.firstChild)rw.removeChild(rw.firstChild);
 var s=document.createElementNS("http://www.w3.org/2000/svg","svg");
 s.setAttribute("viewBox","0 0 652 150");s.setAttribute("width","100%");
 s.setAttribute("role","img");s.setAttribute("aria-label",tr("pn_rec"));
-rw.appendChild(s);
+rw.appendChild(s);attachPan(s,"rec",false);
 var ser=[];
-if(vis.renv)ser.push({x:LAST.t,y:LAST.xn,c:C.o,d:dashOf("renv")});
-if(vis.rcomp&&LAST.xc)ser.push({x:LAST.t,y:LAST.xc,c:C.v,d:"5 3"});
-if(!ser.length)ser.push({x:LAST.t,y:LAST.xn,c:C.o});
-drawXY(s,ser,652,150);}
+if(vis.renv)ser.push({x:LAST.t,y:LAST.xn,c:C.r,d:dashOf("renv")});
+if(vis.rcomp&&LAST.xc)ser.push({x:LAST.t,y:LAST.xc,c:C.r2,d:"5 3"});
+if(!ser.length)ser.push({x:LAST.t,y:LAST.xn,c:C.r});
+drawXY(s,ser,652,150,"rec");}
 function mini(parent,title,draw){var d=document.createElement("div");d.className="mini";
 var p=document.createElement("p");p.className="mt";p.textContent=title;d.appendChild(p);
 var s=document.createElementNS("http://www.w3.org/2000/svg","svg");
@@ -1183,8 +1462,10 @@ var xc=null;
 if(useCal){xc=new Float64Array(xn.length);var m2=0;
 for(i=0;i<xn.length;i++){xc[i]=compensate(xn[i],CAL);m2=Math.max(m2,Math.abs(xc[i]));}
 if(m2>0)for(i=0;i<xn.length;i++)xc[i]/=m2;}
-LAST={t:res.trec,xn:xn,xc:xc};
-drawRec();
+// raw = obwiednia odtworzona bez normalizacji, w tych samych jednostkach
+// co wejściowa — tylko wtedy można je porównać na jednym wykresie
+LAST={t:res.trec,xn:xn,xc:xc,raw:res.xrec};
+drawRec();drawEnv();
 document.getElementById("rec-info").textContent=
  tr("st_peak")+" = "+pk.toFixed(3)+(useCal?" · "+tr("st_comp"):"")+
  " · "+tr("py_done")+meta.elapsed.toFixed(1)+" s";
@@ -1204,16 +1485,16 @@ card.appendChild(grid);
 mini(grid,"F(τ)",function(v){tiny(v,pl.x_in,C.b);});
 mini(grid,"F1 cdf",function(v){tiny(v,pl.cdf_in,C.b);});
 mini(grid,"F2 sin(cdf)",function(v){tiny(v,pl.sin_in,C.b);});
-mini(grid,"Im p(f)·m",function(v){tiny(v,pl.Fi_mult,C.a,true);});
-mini(grid,"P(f)",function(v){tiny(v,pl.P_out,C.a,true);});
-mini(grid,"F4",function(v){tiny(v,pl.f_rec,C.o);});
-mini(grid,"F5",function(v){tiny(v,pl.phase,C.o);});
-mini(grid,"x_rec",function(v){tiny(v,pl.x_rec,C.o);});
-mini(grid,"cdf x_rec",function(v){tiny(v,pl.cdf_rec,C.o);});
+mini(grid,"Im p(f)·m",function(v){tiny(v,pl.Fi_mult,C.r,true);});
+mini(grid,"P(f)",function(v){tiny(v,pl.P_out,C.r,true);});
+mini(grid,"F4",function(v){tiny(v,pl.f_rec,C.r);});
+mini(grid,"F5",function(v){tiny(v,pl.phase,C.r);});
+mini(grid,"x_rec",function(v){tiny(v,pl.x_rec,C.r);});
+mini(grid,"cdf x_rec",function(v){tiny(v,pl.cdf_rec,C.r);});
 mini(grid,useCal?tr("st_pre"):tr("st_nocomp"),function(v){
  var src=xc||xn,step=Math.max(1,Math.floor(src.length/2000)),arr=[];
  for(var i=0;i<src.length;i+=step)arr.push(src[i]);
- tiny(v,arr,useCal?C.v:C.g);});
+ tiny(v,arr,useCal?C.r2:C.g);});
 
 var c2=document.createElement("div");c2.className="p";out.appendChild(c2);
 var bits=parseInt(document.getElementById("bits").value,10),
@@ -1269,6 +1550,15 @@ runPython(cfg).then(function(res){
 /* ====================================================================== */
 /*  START                                                                 */
 /* ====================================================================== */
+// Przeciąganie myszką na wszystkich wykresach poza głównym, gdzie gest
+// obsługuje narzędzie Przesuwaj. Wykres P(f) przesuwa w poziomie wspólne
+// okno częstotliwości, żeby nie rozjechał się z edytorem splajnu.
+attachPan(svgFl,"flt",true);
+attachPan(document.getElementById("svg-env"),"env",false);
+attachPan(svgM,"mir",false);
+attachPan(svgD,"dio",false);
+attachPan(svgT,"tr",false);
+
 knots=expKnots();rebuild();
 applyTheme();applyLang();
 syncCoef();updEq();recompute();drawCal();

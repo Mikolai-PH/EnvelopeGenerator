@@ -27,6 +27,32 @@ odwracania i plik CSV. Plakietka zmienia się na „dokładne N = 261 569".
 
 Nic, co wychodzi z aplikacji jako plik, nie pochodzi z przybliżenia.
 
+## Konwencja kolorystyczna
+
+Jedna dla całej strony. Ta sama wielkość ma ten sam kolor na każdym wykresie.
+
+| kolor | znaczenie |
+|---|---|
+| niebieski | obwiednia startowa i wszystko z niej policzone — `F(τ)`, dystrybuanta, `sin(cdf)`, `Im p(f)`, `P(f)` przed |
+| jasnoniebieski | to samo, wielkość drugorzędna: `Re p(f)`, które z założenia ma być zerem |
+| czerwony | nowa obwiednia po nałożeniu mnożnika i wszystko z niej — `Im p·m`, `P(f)` po, `x_rec` |
+| jasnoczerwony | ta sama nowa obwiednia, ale przedzniekształcona pod sprzęt |
+| pomarańczowy | obiekt projektowany ręcznie: splajn `m`, dopasowana krzywa `g` |
+| szary | odniesienia i konstrukcje pomocnicze: `exp(−|f|^44)`, odbicie, `y = x` |
+| fioletowy | podgląd wpisanego równania, jeszcze niezatwierdzony |
+
+## Sterowanie wykresami
+
+Każdy wykres ma pod spodem pasek osi: pola tików, dwa suwaki skali i przycisk
+`Auto`. W polu tików wpisz liczbę — dostaniesz tyle równo rozłożonych podziałek
+— albo listę wartości po przecinku, np. `0.5, 1, 2, 10`. Wykresy logarytmiczne
+mają dodatkowo pole progu liniowego.
+
+Każdy wykres można też przeciągać myszką. Na planszy głównej służy do tego
+narzędzie `Przesuwaj`, bo zwykłe przeciąganie przesuwa tam węzły. Na pozostałych
+wystarczy złapać i pociągnąć. Wykres `P(f)` przesuwa w poziomie wspólne okno
+częstotliwości, żeby nie rozjechał się z edytorem splajnu.
+
 ## Publikacja na GitHub Pages
 
 1. Załóż konto na [github.com](https://github.com).
